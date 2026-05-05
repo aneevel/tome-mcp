@@ -20,10 +20,10 @@ try
     }
     else
     {
-        Console.Error.WriteLine("[ERROR]: Malformed input; skipping processing.");
+        Console.Error.WriteLine(JsonSerializer.Serialize(new { result = new { message = "ERROR" }}));
     }
 }
 catch
 {
-    Console.Error.WriteLine("[ERROR]: Malformed input; skipping processing.");
+    Console.Error.WriteLine(JsonSerializer.Serialize(new { result = new { message = "ERROR" }}));
 }
