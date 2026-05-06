@@ -27,6 +27,7 @@ public class Invocation
     public static readonly Dictionary<string, string> AvailableTools = new()
     {
         ["ping"] = "Returns pong",
+        ["read_class"] = "Parse a T-Engine4 Lua class file and return its structure (inheritance, methods, dependencies)",
     };
 
     public static readonly Dictionary<string, string> MethodExamples = new()
@@ -34,7 +35,8 @@ public class Invocation
         ["initialize"] = "{\"method\": \"initialize\"}",
         ["shutdown"] = "{\"method\": \"shutdown\"}",
         ["tools/list"] = "{\"method\": \"tools/list\"}",
-        ["tools/call"] = "{\"method\": \"tools/call\", \"params\": {\"name\": \"ping\"}}",
+        ["tools/call (ping)"] = "{\"method\": \"tools/call\", \"params\": {\"name\": \"ping\"}}",
+        ["tools/call (read_class)"] = "{\"method\": \"tools/call\", \"params\": {\"name\": \"read_class\", \"class_name\": \"engine.Actor\"}}",
     };
 
     public static Invocation Deserialize(string json)
@@ -78,4 +80,7 @@ public class InvocationParams
 
     [JsonPropertyName("name")]
     public string? Name { get; set; }
+
+    [JsonPropertyName("class_name")]
+    public string? ClassName { get; set; }
 }
