@@ -29,9 +29,18 @@ var classIndex = new ClassIndex();
 var classCount = classIndex.Build(engineRoot, modulesRoot);
 
 Console.Error.WriteLine($"Indexed {classCount} classes, {classIndex.AllFiles.Count} total files.");
+
+Console.Error.WriteLine("Building data index...");
+
+var dataIndex = new DataIndex();
+var modulesDataRoot = Path.Combine(modulesRoot, "data");
+if (Directory.Exists(modulesDataRoot))
+    dataIndex.Build(modulesDataRoot);
+
+Console.Error.WriteLine($"Indexed {dataIndex.Talents.Count} talents, {dataIndex.Effects.Count} effects, {dataIndex.DamageTypes.Count} damage types.");
 Console.Error.WriteLine("T-Engine4 MCP Server running.");
 
-var handler = new RequestHandler(engineRoot, classIndex);
+var handler = new RequestHandler(engineRoot, classIndex, dataIndex);
 
 while (true)
 {
@@ -43,9 +52,7 @@ while (true)
     try
     {
         var invocation = Invocation.Deserialize(line);
-
-        if (!handler.Handle(invocation))
-            return 0;
+        handler.Handle(invocation);
     }
     catch
     {

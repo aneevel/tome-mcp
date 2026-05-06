@@ -5,8 +5,6 @@ namespace TomeMcp;
 
 public enum MethodType
 {
-    Initialize,
-    Shutdown,
     ToolsList,
     ToolsCall,
 }
@@ -18,8 +16,6 @@ public class Invocation
 
     private static readonly Dictionary<string, MethodType> MethodMap = new()
     {
-        ["initialize"] = MethodType.Initialize,
-        ["shutdown"] = MethodType.Shutdown,
         ["tools/list"] = MethodType.ToolsList,
         ["tools/call"] = MethodType.ToolsCall,
     };
@@ -31,12 +27,13 @@ public class Invocation
         ["list_classes"] = "List all indexed classes, optionally filtered by name substring",
         ["class_hierarchy"] = "Show full inheritance tree for a class (ancestors and descendants)",
         ["search_code"] = "Search all Lua source files for a keyword or regex pattern, with surrounding context. Use path_filter to narrow by directory (e.g. talents/psionic)",
+        ["read_talent"] = "Return structural info for a talent by name, including effects applied and damage types used",
+        ["read_effect"] = "Return structural info for a timed effect by name or EFF_ID, plus which talents apply it",
+        ["query_data"] = "Structured cross-reference query over talents, effects, and damage types. Filter by entity_type, talent_type, damage_type, effect_name",
     };
 
     public static readonly Dictionary<string, string> MethodExamples = new()
     {
-        ["initialize"] = "{\"method\": \"initialize\"}",
-        ["shutdown"] = "{\"method\": \"shutdown\"}",
         ["tools/list"] = "{\"method\": \"tools/list\"}",
         ["tools/call (ping)"] = "{\"method\": \"tools/call\", \"params\": {\"name\": \"ping\"}}",
         ["tools/call (read_class)"] = "{\"method\": \"tools/call\", \"params\": {\"name\": \"read_class\", \"class_name\": \"engine.Actor\"}}",
@@ -45,6 +42,9 @@ public class Invocation
         ["tools/call (class_hierarchy)"] = "{\"method\": \"tools/call\", \"params\": {\"name\": \"class_hierarchy\", \"class_name\": \"engine.Entity\"}}",
         ["tools/call (search_code)"] = "{\"method\": \"tools/call\", \"params\": {\"name\": \"search_code\", \"pattern\": \"knockback\"}}",
         ["tools/call (search_code filtered)"] = "{\"method\": \"tools/call\", \"params\": {\"name\": \"search_code\", \"pattern\": \"DamageType.MIND\", \"path_filter\": \"talents/psionic\"}}",
+        ["tools/call (read_talent)"] = "{\"method\": \"tools/call\", \"params\": {\"name\": \"read_talent\", \"talent_name\": \"Reproach\"}}",
+        ["tools/call (read_effect)"] = "{\"method\": \"tools/call\", \"params\": {\"name\": \"read_effect\", \"effect_name\": \"EFF_AGONY\"}}",
+        ["tools/call (query_data)"] = "{\"method\": \"tools/call\", \"params\": {\"name\": \"query_data\", \"entity_type\": \"talent\", \"talent_type\": \"cursed\", \"damage_type\": \"MIND\"}}",
     };
 
     public static Invocation Deserialize(string json)
@@ -109,4 +109,19 @@ public class InvocationParams
 
     [JsonPropertyName("path_filter")]
     public string? PathFilter { get; set; }
+
+    [JsonPropertyName("talent_name")]
+    public string? TalentName { get; set; }
+
+    [JsonPropertyName("effect_name")]
+    public string? EffectName { get; set; }
+
+    [JsonPropertyName("entity_type")]
+    public string? EntityType { get; set; }
+
+    [JsonPropertyName("talent_type")]
+    public string? TalentType { get; set; }
+
+    [JsonPropertyName("damage_type")]
+    public string? DamageType { get; set; }
 }
