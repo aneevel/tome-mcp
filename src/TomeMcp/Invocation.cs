@@ -7,6 +7,7 @@ public enum MethodType
 {
     Initialize,
     Shutdown,
+    ToolsList,
     ToolsCall,
 }
 
@@ -19,7 +20,21 @@ public class Invocation
     {
         ["initialize"] = MethodType.Initialize,
         ["shutdown"] = MethodType.Shutdown,
+        ["tools/list"] = MethodType.ToolsList,
         ["tools/call"] = MethodType.ToolsCall,
+    };
+
+    public static readonly Dictionary<string, string> AvailableTools = new()
+    {
+        ["ping"] = "Returns pong",
+    };
+
+    public static readonly Dictionary<string, string> MethodExamples = new()
+    {
+        ["initialize"] = "{\"method\": \"initialize\"}",
+        ["shutdown"] = "{\"method\": \"shutdown\"}",
+        ["tools/list"] = "{\"method\": \"tools/list\"}",
+        ["tools/call"] = "{\"method\": \"tools/call\", \"params\": {\"name\": \"ping\"}}",
     };
 
     public static Invocation Deserialize(string json)

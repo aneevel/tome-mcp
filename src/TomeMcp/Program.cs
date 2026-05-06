@@ -21,5 +21,6 @@ while (true)
     catch
     {
         Response.FromMessage("ERROR: Malformed input.").Send();
+        RequestHandler.SendToolsList();
     }
 }
