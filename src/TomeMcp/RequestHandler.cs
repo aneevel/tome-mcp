@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace TomeMcp;
 
 public class RequestHandler
@@ -9,34 +7,29 @@ public class RequestHandler
         switch (invocation.Method)
         {
             case MethodType.Shutdown:
-                Respond(new { message = "Shutting down." });
+                Response.FromMessage("Shutting down.").Send();
                 return false;
 
             case MethodType.Initialize:
-                Respond(new { message = "OK" });
+                Response.FromMessage("OK").Send();
                 Thread.Sleep(3000);
-                Respond(new { tools = Array.Empty<object>() });
+                Response.FromContent(Array.Empty<object>()).Send();
                 break;
 
             case MethodType.ToolsCall:
-                Respond(new { message = "OK" });
+                Response.FromMessage("OK").Send();
 
                 if (invocation.Params?.Name == "ping")
                 {
-                    Respond(new { content = new[] { new { type = "text", text = "pong" } } });
+                    Response.FromContent(new object[] { new { type = "text", text = "pong" } }).Send();
                 }
                 else
                 {
-                    Respond(new { message = "ERROR: Malformed input." });
+                    Response.FromMessage("ERROR: Malformed input.").Send();
                 }
                 break;
         }
 
         return true;
-    }
-
-    private void Respond(object result)
-    {
-        Console.WriteLine(JsonSerializer.Serialize(new { result }));
     }
 }

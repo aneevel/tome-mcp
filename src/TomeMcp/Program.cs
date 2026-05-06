@@ -1,4 +1,3 @@
-using System.Text.Json;
 using TomeMcp;
 
 Console.WriteLine("T-Engine4 MCP Server running...");
@@ -21,6 +20,6 @@ while (true)
     }
     catch
     {
-        Console.WriteLine(JsonSerializer.Serialize(new { result = new { message = "ERROR: Malformed input." } }));
+        Response.FromMessage("ERROR: Malformed input.").Send();
     }
 }
