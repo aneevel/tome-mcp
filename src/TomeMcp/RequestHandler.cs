@@ -5,10 +5,12 @@ namespace TomeMcp;
 public class RequestHandler
 {
     private readonly string _engineRoot;
+    private readonly ClassIndex _classIndex;
 
-    public RequestHandler(string engineRoot)
+    public RequestHandler(string engineRoot, ClassIndex classIndex)
     {
         _engineRoot = engineRoot;
+        _classIndex = classIndex;
     }
 
     public bool Handle(Invocation invocation)
@@ -51,6 +53,14 @@ public class RequestHandler
                 HandleReadClass(invocation);
                 break;
 
+            case "list_classes":
+                HandleListClasses(invocation);
+                break;
+
+            case "class_hierarchy":
+                HandleClassHierarchy(invocation);
+                break;
+
             default:
                 Response.FromMessage("ERROR: Malformed input.").Send();
                 SendToolsList();
@@ -67,17 +77,79 @@ public class RequestHandler
             return;
         }
 
+        if (_classIndex.Classes.TryGetValue(className, out var cached))
+        {
+            var json = JsonSerializer.Serialize(cached, JsonOptions);
+            Response.FromContent(new object[] { new { type = "text", text = json } }).Send();
+            return;
+        }
+
         var filePath = ResolveClassPath(className);
         if (!File.Exists(filePath))
         {
-            Response.FromMessage($"ERROR: File not found: {filePath}").Send();
+            Response.FromMessage($"ERROR: Class not found: {className}").Send();
             return;
         }
 
         var content = File.ReadAllText(filePath);
         var classInfo = LuaParser.Parse(content, filePath);
-        var json = JsonSerializer.Serialize(classInfo, JsonOptions);
+        var json2 = JsonSerializer.Serialize(classInfo, JsonOptions);
 
+        Response.FromContent(new object[] { new { type = "text", text = json2 } }).Send();
+    }
+
+    private void HandleListClasses(Invocation invocation)
+    {
+        var filter = invocation.Params?.Filter;
+
+        var classes = _classIndex.Classes.Values.AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            classes = classes.Where(c =>
+                c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var result = classes
+            .OrderBy(c => c.Name)
+            .Select(c => new
+            {
+                name = c.Name,
+                baseClasses = c.BaseClasses,
+                methodCount = c.Methods.Count,
+                isRootClass = c.IsRootClass,
+            })
+            .ToArray<object>();
+
+        var json = JsonSerializer.Serialize(result, JsonOptions);
+        Response.FromContent(new object[] { new { type = "text", text = json } }).Send();
+    }
+
+    private void HandleClassHierarchy(Invocation invocation)
+    {
+        var className = invocation.Params?.ClassName;
+        if (string.IsNullOrWhiteSpace(className))
+        {
+            Response.FromMessage("ERROR: Missing class_name parameter.").Send();
+            return;
+        }
+
+        if (!_classIndex.Classes.ContainsKey(className))
+        {
+            Response.FromMessage($"ERROR: Class not found in index: {className}").Send();
+            return;
+        }
+
+        var ancestors = _classIndex.GetAncestors(className);
+        var descendants = _classIndex.GetDescendants(className);
+
+        var result = new
+        {
+            @class = className,
+            ancestors,
+            descendants,
+        };
+
+        var json = JsonSerializer.Serialize(result, JsonOptions);
         Response.FromContent(new object[] { new { type = "text", text = json } }).Send();
     }
 

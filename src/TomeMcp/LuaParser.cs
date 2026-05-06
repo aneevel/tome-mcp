@@ -175,16 +175,20 @@ public static partial class LuaParser
         return info;
     }
 
+    private static readonly string[] PathMarkers = ["/engine/", "/mod/", "/modules/"];
+
     private static string DeriveClassNameFromPath(string filePath)
     {
-        var engineMarker = "/engine/";
-        var idx = filePath.LastIndexOf(engineMarker, StringComparison.Ordinal);
-        if (idx >= 0)
+        foreach (var marker in PathMarkers)
         {
-            var relative = filePath[(idx + 1)..];
-            if (relative.EndsWith(".lua", StringComparison.OrdinalIgnoreCase))
-                relative = relative[..^4];
-            return relative.Replace('/', '.');
+            var idx = filePath.LastIndexOf(marker, StringComparison.Ordinal);
+            if (idx >= 0)
+            {
+                var relative = filePath[(idx + 1)..];
+                if (relative.EndsWith(".lua", StringComparison.OrdinalIgnoreCase))
+                    relative = relative[..^4];
+                return relative.Replace('/', '.');
+            }
         }
 
         var fileName = Path.GetFileNameWithoutExtension(filePath);

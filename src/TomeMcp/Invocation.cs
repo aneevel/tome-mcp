@@ -28,6 +28,8 @@ public class Invocation
     {
         ["ping"] = "Returns pong",
         ["read_class"] = "Parse a T-Engine4 Lua class file and return its structure (inheritance, methods, dependencies)",
+        ["list_classes"] = "List all indexed classes, optionally filtered by name substring",
+        ["class_hierarchy"] = "Show full inheritance tree for a class (ancestors and descendants)",
     };
 
     public static readonly Dictionary<string, string> MethodExamples = new()
@@ -37,6 +39,9 @@ public class Invocation
         ["tools/list"] = "{\"method\": \"tools/list\"}",
         ["tools/call (ping)"] = "{\"method\": \"tools/call\", \"params\": {\"name\": \"ping\"}}",
         ["tools/call (read_class)"] = "{\"method\": \"tools/call\", \"params\": {\"name\": \"read_class\", \"class_name\": \"engine.Actor\"}}",
+        ["tools/call (list_classes)"] = "{\"method\": \"tools/call\", \"params\": {\"name\": \"list_classes\"}}",
+        ["tools/call (list_classes filtered)"] = "{\"method\": \"tools/call\", \"params\": {\"name\": \"list_classes\", \"filter\": \"Actor\"}}",
+        ["tools/call (class_hierarchy)"] = "{\"method\": \"tools/call\", \"params\": {\"name\": \"class_hierarchy\", \"class_name\": \"engine.Entity\"}}",
     };
 
     public static Invocation Deserialize(string json)
@@ -83,4 +88,7 @@ public class InvocationParams
 
     [JsonPropertyName("class_name")]
     public string? ClassName { get; set; }
+
+    [JsonPropertyName("filter")]
+    public string? Filter { get; set; }
 }
