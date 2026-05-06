@@ -28,7 +28,7 @@ Console.Error.WriteLine("T-Engine4 MCP Server — building class index...");
 var classIndex = new ClassIndex();
 var classCount = classIndex.Build(engineRoot, modulesRoot);
 
-Console.Error.WriteLine($"Indexed {classCount} classes.");
+Console.Error.WriteLine($"Indexed {classCount} classes, {classIndex.AllFiles.Count} total files.");
 Console.Error.WriteLine("T-Engine4 MCP Server running.");
 
 var handler = new RequestHandler(engineRoot, classIndex);

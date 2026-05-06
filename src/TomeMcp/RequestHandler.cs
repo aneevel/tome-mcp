@@ -61,6 +61,10 @@ public class RequestHandler
                 HandleClassHierarchy(invocation);
                 break;
 
+            case "search_code":
+                HandleSearchCode(invocation);
+                break;
+
             default:
                 Response.FromMessage("ERROR: Malformed input.").Send();
                 SendToolsList();
@@ -151,6 +155,45 @@ public class RequestHandler
 
         var json = JsonSerializer.Serialize(result, JsonOptions);
         Response.FromContent(new object[] { new { type = "text", text = json } }).Send();
+    }
+
+    private void HandleSearchCode(Invocation invocation)
+    {
+        var pattern = invocation.Params?.Pattern;
+        if (string.IsNullOrWhiteSpace(pattern))
+        {
+            Response.FromMessage("ERROR: Missing pattern parameter.").Send();
+            return;
+        }
+
+        var caseSensitive = invocation.Params?.CaseSensitive ?? false;
+        var maxResults = invocation.Params?.MaxResults ?? 50;
+        var contextLines = invocation.Params?.ContextLines ?? 2;
+        var pathFilter = invocation.Params?.PathFilter;
+
+        maxResults = Math.Clamp(maxResults, 1, 200);
+        contextLines = Math.Clamp(contextLines, 0, 10);
+
+        try
+        {
+            var matches = _classIndex.Search(pattern, caseSensitive, maxResults, contextLines, pathFilter);
+
+            var result = new
+            {
+                pattern,
+                caseSensitive,
+                totalMatches = matches.Count,
+                capped = matches.Count >= maxResults,
+                matches,
+            };
+
+            var json = JsonSerializer.Serialize(result, JsonOptions);
+            Response.FromContent(new object[] { new { type = "text", text = json } }).Send();
+        }
+        catch (System.Text.RegularExpressions.RegexParseException ex)
+        {
+            Response.FromMessage($"ERROR: Invalid regex pattern: {ex.Message}").Send();
+        }
     }
 
     private string ResolveClassPath(string className)

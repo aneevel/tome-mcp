@@ -1,12 +1,43 @@
+using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
+
 namespace TomeMcp;
+
+public class SearchMatch
+{
+    [JsonPropertyName("className")]
+    public string ClassName { get; set; } = "";
+
+    [JsonPropertyName("category")]
+    public string Category { get; set; } = "";
+
+    [JsonPropertyName("filePath")]
+    public string FilePath { get; set; } = "";
+
+    [JsonPropertyName("lineNumber")]
+    public int LineNumber { get; set; }
+
+    [JsonPropertyName("line")]
+    public string Line { get; set; } = "";
+
+    [JsonPropertyName("context")]
+    public List<string> Context { get; set; } = new();
+}
 
 public class ClassIndex
 {
     public Dictionary<string, LuaClassInfo> Classes { get; } = new();
     public Dictionary<string, List<string>> ChildrenOf { get; } = new();
+    public List<string> AllFiles { get; } = new();
+
+    private readonly Dictionary<string, string> _fileToClassName = new();
+    private string _gameRoot = "";
 
     public int Build(string engineRoot, string modulesRoot)
     {
+        _gameRoot = Path.GetDirectoryName(engineRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+            ?? engineRoot;
+
         var searchDirs = new List<string> { engineRoot };
         if (Directory.Exists(modulesRoot))
             searchDirs.Add(modulesRoot);
@@ -15,6 +46,8 @@ public class ClassIndex
         {
             foreach (var filePath in Directory.EnumerateFiles(dir, "*.lua", SearchOption.AllDirectories))
             {
+                AllFiles.Add(filePath);
+
                 var content = File.ReadAllText(filePath);
                 if (!content.Contains("class.make") && !content.Contains("class.inherit"))
                     continue;
@@ -24,6 +57,7 @@ public class ClassIndex
                     continue;
 
                 Classes.TryAdd(info.Name, info);
+                _fileToClassName[filePath] = info.Name;
             }
         }
 
@@ -125,5 +159,69 @@ public class ClassIndex
             descendants.Add(child);
             CollectDescendants(child, descendants, visited);
         }
+    }
+
+    public List<SearchMatch> Search(string pattern, bool caseSensitive = false, int maxResults = 50, int contextLines = 2, string? pathFilter = null)
+    {
+        var options = caseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase;
+        var regex = new Regex(pattern, options);
+
+        var results = new List<SearchMatch>();
+
+        foreach (var filePath in AllFiles)
+        {
+            if (pathFilter is not null && !filePath.Contains(pathFilter, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (!File.Exists(filePath))
+                continue;
+
+            var lines = File.ReadAllLines(filePath);
+            _fileToClassName.TryGetValue(filePath, out var className);
+            var category = DeriveCategoryFromPath(filePath);
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (!regex.IsMatch(lines[i]))
+                    continue;
+
+                var contextStart = Math.Max(0, i - contextLines);
+                var contextEnd = Math.Min(lines.Length - 1, i + contextLines);
+
+                var context = new List<string>();
+                for (int c = contextStart; c <= contextEnd; c++)
+                {
+                    var prefix = c == i ? ">" : " ";
+                    context.Add($"{prefix} {c + 1}: {lines[c]}");
+                }
+
+                results.Add(new SearchMatch
+                {
+                    ClassName = className ?? "",
+                    Category = category,
+                    FilePath = filePath,
+                    LineNumber = i + 1,
+                    Line = lines[i].TrimStart(),
+                    Context = context,
+                });
+
+                if (results.Count >= maxResults)
+                    return results;
+            }
+        }
+
+        return results;
+    }
+
+    private string DeriveCategoryFromPath(string filePath)
+    {
+        if (string.IsNullOrEmpty(_gameRoot) || !filePath.StartsWith(_gameRoot, StringComparison.Ordinal))
+            return Path.GetFileNameWithoutExtension(filePath);
+
+        var relative = filePath[(_gameRoot.Length + 1)..];
+        if (relative.EndsWith(".lua", StringComparison.OrdinalIgnoreCase))
+            relative = relative[..^4];
+
+        return relative.Replace(Path.DirectorySeparatorChar, '/');
     }
 }
